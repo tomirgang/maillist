@@ -1,0 +1,16 @@
+[mailbox]
+server = imappro.zoho.eu
+user = info@360tasks.de
+
+[smtp]
+server = smtppro.zoho.eu
+user = info@360tasks.de
+port = 587
+tls = true
+
+[sender]
+address = info@360tasks.de
+name = Tom
+
+[test]
+receiver = thomas@irgang.eu
