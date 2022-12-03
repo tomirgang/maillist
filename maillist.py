@@ -240,7 +240,7 @@ class Subscribers:
         Read maillist from JSON file.
         """
         if exists(self.config.maillist_file):
-            with open(self.args.list, 'r', encoding='utf-8') as file:
+            with open(self.config.maillist_file, 'r', encoding='utf-8') as file:
                 self.list = json.load(file)
         else:
             self.list = {'subscribers': []}
@@ -305,6 +305,8 @@ class Receiver:
         message.subject = subject
         message.text = msg.text
         message.html = msg.html
+        message.receivers += receivers
+        message.sender_name = msg.from_values.name
 
         for att in msg.attachments:
             attachment = Attachment()
