@@ -231,8 +231,9 @@ class Subscribers:
     Subscribers manage the maillist subscribers.
     """
 
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, sender: Sender):
         self.config = config
+        self.sender = sender
         self._get_list()
 
     def _get_list(self):
@@ -253,11 +254,60 @@ class Subscribers:
         with open(self.config.maillist_file, 'w', encoding='utf-8') as file:
             json.dump(self.list, file)
 
-    def get_receivers(self, subject):
+    def _is_allowed(self, sender: str):
+        return sender in self.list['subscribers']
+
+    def get_receivers(self, subject: str, sender: str) -> tuple[bool, list[str]]:
         """
-        Get all receivers for the given subject.
+        Get all receivers for the given subject and sender.
         """
-        return self.list['subscribers']
+        forward = self._handle_command(subject, sender)
+
+        if forward and self._is_allowed(sender):
+            receivers = self.list['subscribers'].copy()
+            receivers.remove(sender)
+            return (True, receivers)
+        else:
+            return (False, [])
+
+    def _handle_command(self, subject: str, sender: str) -> bool:
+        forward = True
+        sub = subject.strip()
+        if sub.startswith('$>'):
+            forward = False
+            command = sub[2:].split(' ')[0]
+            if command.lower().startswith('subscribe'):
+                self._add_subscriber(sender)
+            elif command.lower().startswith('unsubscribe'):
+                self._remove_subscriber(sender)
+
+        return forward
+
+    def _add_subscriber(self, address):
+        logging.info('New subscriber: %s', address)
+
+        self.list['subscribers'].append(address)
+        self._save_list()
+
+        message = Message()
+        message.subject = 'Welcome!'
+        message.text = 'Hi!\nYou successfully subscribed to this maillist.'
+        message.receivers = [address]
+
+        self.sender.send_mail(message)
+
+    def _remove_subscriber(self, address):
+        logging.info('User canceled subscription: %s', address)
+
+        self.list['subscribers'].remove(address)
+        self._save_list()
+
+        message = Message()
+        message.subject = 'Bye!'
+        message.text = 'Hi!\nYou successfully canceled your subscription to this maillist.'
+        message.receivers = [address]
+
+        self.sender.send_mail(message)
 
 
 class Receiver:
@@ -296,7 +346,11 @@ class Receiver:
         self._log_message(msg)
 
         subject = msg.subject
-        receivers = self.subscribers.get_receivers(subject)
+        forward, receivers = self.subscribers.get_receivers(subject, msg.from_)
+        if not forward:
+            logging.debug('message shall be not forwarded')
+            return
+
         if len(receivers) == 0:
             logging.info('no subscribers for %s', subject)
             return
@@ -341,8 +395,8 @@ class Maillist:
         Create a new maillist.
         """
         self.config = config
-        self.subscribers = Subscribers(self.config)
         self.sender = Sender(self.config)
+        self.subscribers = Subscribers(self.config, self.sender)
         self.receiver = Receiver(self.config, self.subscribers, self.sender)
 
         if self.config.send_test_mail:
