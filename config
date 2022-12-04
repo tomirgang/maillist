@@ -16,12 +16,12 @@ name = Tom
 receiver = thomas@irgang.eu
 
 [snippets]
-list_name = "info@360tasks.de"
+list_name = info@360tasks.de
 footer_text = ./snippets/footer.txt
 footer_html = ./snippets/footer.html
 subscribe_text = ./snippets/subscribe.txt
 subscribe_html = ./snippets/subscribe.html
-subscribe_subject = "Welcome!"
+subscribe_subject = Welcome!
 unsubscribe_text = ./snippets/unsubscribe.txt
 unsubscribe_html = ./snippets/unsubscribe.html
-unsubscribe_subject = "Bye!"
+unsubscribe_subject = Bye!

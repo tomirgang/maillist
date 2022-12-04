@@ -79,9 +79,9 @@ class Config:
         self._get_config()
         self._get_secrets()
 
-    def _get_args(self):
+    def _interface_argparse(self):
         """
-        Get arguments from commandline, or defaults.
+        Encapsulate calls to argparse dependency.
         """
         parser = argparse.ArgumentParser(description='Simple Maillist.')
         parser.add_argument('-c', '--config', default='./config', type=str,
@@ -101,7 +101,13 @@ class Config:
         parser.add_argument('-r', '--reduce_logs', action="store_true",
                             help='log only errors')
 
-        args = parser.parse_args()
+        return parser.parse_args()
+
+    def _get_args(self):
+        """
+        Get arguments from commandline, or defaults.
+        """
+        args = self._interface_argparse()
 
         log_level = logging.INFO
         if args.verbose:
@@ -110,9 +116,13 @@ class Config:
             log_level = logging.ERROR
         logging.basicConfig(filename=args.logfile,
                             encoding='utf-8', level=log_level)
+        logging.getLogger().setLevel(log_level)
 
         if not args.reduce_logs:
             logging.getLogger().addHandler(logging.StreamHandler())
+
+        logging.info('using log level %r', log_level)
+        print('using log level %r' % log_level)
 
         if log_level == logging.DEBUG:
             logging.getLogger().setLevel(logging.DEBUG)
@@ -133,6 +143,14 @@ class Config:
         self.send_test_mail = args.test
         logging.debug('send test mail: %r', self.send_test_mail)
 
+    def _interface_configparser(self):
+        """
+        Encapsulate calls to configparser.
+        """
+        config = configparser.ConfigParser()
+        config.read(self.config_file)
+        return config
+
     def _get_config(self):
         """
         Read config from config file.
@@ -143,8 +161,7 @@ class Config:
             logging.error('Config file %s doesn\'t exist!', self.config_file)
             sys.exit(1)
 
-        config = configparser.ConfigParser()
-        config.read(self.config_file)
+        config = self._interface_configparser()
 
         if 'mailbox' in config:
             mailbox = config['mailbox']
@@ -215,33 +232,43 @@ class Config:
             else:
                 self.footer_html = ""
 
-            subscribe_text_file = snippets.get('footer_text', None)
+            subscribe_text_file = snippets.get('subscribe_text', None)
             if subscribe_text_file is not None and exists(subscribe_text_file):
                 with open(subscribe_text_file, 'r', encoding='utf-8') as f:
                     self.subscribe_text = f.read()
             else:
                 self.subscribe_text = ""
 
-            subscribe_html_file = snippets.get('footer_html', None)
+            subscribe_html_file = snippets.get('subscribe_html', None)
             if subscribe_html_file is not None and exists(subscribe_html_file):
                 with open(subscribe_html_file, 'r', encoding='utf-8') as f:
                     self.subscribe_html = f.read()
             else:
                 self.subscribe_html = ""
 
-            unsubscribe_text_file = snippets.get('footer_text', None)
+            unsubscribe_text_file = snippets.get('unsubscribe_text', None)
             if unsubscribe_text_file is not None and exists(unsubscribe_text_file):
                 with open(unsubscribe_text_file, 'r', encoding='utf-8') as f:
                     self.unsubscribe_text = f.read()
             else:
                 self.unsubscribe_text = ""
 
-            unsubscribe_html_file = snippets.get('footer_html', None)
+            unsubscribe_html_file = snippets.get('unsubscribe_html', None)
             if unsubscribe_html_file is not None and exists(unsubscribe_html_file):
                 with open(unsubscribe_html_file, 'r', encoding='utf-8') as f:
                     self.unsubscribe_html = f.read()
             else:
                 self.unsubscribe_html = ""
+        else:
+            self.list_name = self.sender_address
+            self.footer_text = ''
+            self.footer_html = ''
+            self.subscribe_subject = 'Welcome!'
+            self.subscribe_text = ''
+            self.subscribe_html = ''
+            self.unsubscribe_subject = 'Bye!'
+            self.unsubscribe_text = ''
+            self.unsubscribe_html = ''
 
         logging.debug('mail-list name: %s', self.list_name)
         logging.debug('footer text: %s', self.footer_text)
@@ -328,9 +355,15 @@ class Sender:
                             'attachment', filename=attachment.filename)
             msg.attach(part)
 
-        sender = self.config.sender_address
-
         logging.debug('Sending message to %r', message.receivers)
+
+        self._interface_smtplib(message.receivers, msg.as_string())
+
+    def _interface_smtplib(self, receivers, message):
+        """
+        Encapsulate calls to smtplib.
+        """
+        sender = self.config.sender_address
 
         smtp = smtplib.SMTP(self.config.smtp_server,
                             port=self.config.smtp_port)
@@ -339,7 +372,7 @@ class Sender:
         if len(self.config.smtp_user) > 0:
             smtp.login(self.config.smtp_user,
                        self.config.smtp_password)
-        smtp.sendmail(sender, message.receivers, msg.as_string())
+        smtp.sendmail(sender, receivers, message)
         smtp.quit()
 
 
@@ -480,10 +513,14 @@ class Subscribers:
         """
         logging.info('User canceled subscription: %s', address)
 
-        key = self._get_key(tags)
-        if address in self._list[key]:
-            self._list[key].remove(address)
-            self._save_list()
+        if tags is None:
+            for key in self._list.keys():
+                self._list[key].remove(address)
+        else:
+            key = self._get_key(tags)
+            if address in self._list[key]:
+                self._list[key].remove(address)
+                self._save_list()
 
         logging.info('new subscriber list for %r: %r', tags, self._list[key])
 
