@@ -1,0 +1,21 @@
+----------
+
+English text (german text below):
+
+This mail is originating for the mail-list {list_name}.
+The content above was created by another user and not reviewed or moderated.
+
+To unsubscribe to the tags this mail belongs to, reply to this mail with subject {unsubscribe_tag}.
+
+To unsubscribe for all mails, reply with subject $>unsubscribe.
+
+---
+
+German text:
+
+Dies eMail stammt von der mail-list {list_name}.
+The content above was created by another user and not reviewed or moderated.
+
+Antworte auf diese eMail mit dem Betreff '{unsubscribe_tag}', um keine weiteren eMails zu diesen Tags mehr zu bekommen.
+
+Um keine eMails mehr von dieser mail-list zu bekommen, antworte mit dem Betreff $>unsubscribe.
