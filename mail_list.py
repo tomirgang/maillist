@@ -96,8 +96,8 @@ class Config:
                             help='print logs')
         parser.add_argument('-t', '--test', action="store_true",
                             help='send test mail on startup')
-        parser.add_argument('-d', '--damon', action="store_true",
-                            help='run as damon')
+        parser.add_argument('-d', '--daemon', action="store_true",
+                            help='run as daemon')
         parser.add_argument('-r', '--reduce_logs', action="store_true",
                             help='log only errors')
 
@@ -293,7 +293,10 @@ class Sender:
         """
         # Use default sender name if none was provided
         if message.sender_name == "":
-            message.sender_name = self.config.sender_name
+            if self.config.sender_name is not None:
+                message.sender_name = self.config.sender_name
+            else:
+                message.sender_name = self.config.sender_address
 
         smtp_sender = f"{message.sender_name} <{self.config.sender_address}>"
 
@@ -540,8 +543,8 @@ class Receiver:
 
         message = Message()
         message.subject = subject
-        message.text = msg.text
-        message.html = msg.html
+        message.text = msg.text + self.config.footer_text
+        message.html = msg.html + self.config.footer_html
         message.receivers += result.receivers
         message.sender_name = msg.from_values.name
 
