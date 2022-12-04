@@ -199,18 +199,22 @@ class TestConfig:
 
         with open('./snippets/subscribe.txt', 'r', encoding='utf-8') as file:
             text = file.read()
+            text = text.format(list_name=config.list_name)
             assert config.subscribe_text == text, "subscribe text"
 
         with open('./snippets/subscribe.html', 'r', encoding='utf-8') as file:
             text = file.read()
+            text = text.format(list_name=config.list_name)
             assert config.subscribe_html == text, "subscribe html"
 
         with open('./snippets/unsubscribe.txt', 'r', encoding='utf-8') as file:
             text = file.read()
+            text = text.format(list_name=config.list_name)
             assert config.unsubscribe_text == text, "unsubscribe text"
 
         with open('./snippets/unsubscribe.html', 'r', encoding='utf-8') as file:
             text = file.read()
+            text = text.format(list_name=config.list_name)
             assert config.unsubscribe_html == text, "subscribe html"
 
     def test_get_config_no_snippets(self, mocker):

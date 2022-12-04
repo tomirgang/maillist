@@ -236,6 +236,8 @@ class Config:
             if subscribe_text_file is not None and exists(subscribe_text_file):
                 with open(subscribe_text_file, 'r', encoding='utf-8') as f:
                     self.subscribe_text = f.read()
+                    self.subscribe_text = self.subscribe_text.format(
+                        list_name=self.list_name)
             else:
                 self.subscribe_text = ""
 
@@ -243,6 +245,8 @@ class Config:
             if subscribe_html_file is not None and exists(subscribe_html_file):
                 with open(subscribe_html_file, 'r', encoding='utf-8') as f:
                     self.subscribe_html = f.read()
+                    self.subscribe_html = self.subscribe_html.format(
+                        list_name=self.list_name)
             else:
                 self.subscribe_html = ""
 
@@ -250,6 +254,8 @@ class Config:
             if unsubscribe_text_file is not None and exists(unsubscribe_text_file):
                 with open(unsubscribe_text_file, 'r', encoding='utf-8') as f:
                     self.unsubscribe_text = f.read()
+                    self.unsubscribe_text = self.unsubscribe_text.format(
+                        list_name=self.list_name)
             else:
                 self.unsubscribe_text = ""
 
@@ -257,6 +263,8 @@ class Config:
             if unsubscribe_html_file is not None and exists(unsubscribe_html_file):
                 with open(unsubscribe_html_file, 'r', encoding='utf-8') as f:
                     self.unsubscribe_html = f.read()
+                    self.unsubscribe_html = self.unsubscribe_html.format(
+                        list_name=self.list_name)
             else:
                 self.unsubscribe_html = ""
         else:
@@ -458,10 +466,13 @@ class Subscribers:
             result = SubscriberCheckResult()
             result.receivers = receivers
             result.forward = True
+            result.unsubscribe_tag = '$>unsubscribe #' + ' #'.join(tags)
             return result
         else:
             logging.warning(
                 'sender %s tried to send %s, but is no subscriber', sender, subject)
+
+        return SubscriberCheckResult()
 
     def _handle_command(self, subject: str, sender: str, tags: list[str] = None) -> bool:
         """
@@ -489,6 +500,10 @@ class Subscribers:
         logging.info('New subscriber: %s', address)
 
         key = self._get_key(tags)
+
+        if key not in self._list:
+            self._list[key] = []
+
         if address not in self._list[key]:
             self._list[key].append(address)
             self._save_list()
@@ -497,10 +512,8 @@ class Subscribers:
 
         message = Message()
         message.subject = self.config.subscribe_subject
-        message.text = self.config.subscribe_text % {
-            'list_name': self.config.list_name}
-        message.text = self.config.subscribe_html % {
-            'list_name': self.config.list_name}
+        message.text = self.config.subscribe_text
+        message.html = self.config.subscribe_html
         message.receivers = [address]
 
         self.sender.send_mail(message)
@@ -515,20 +528,22 @@ class Subscribers:
 
         if tags is None:
             for key in self._list.keys():
-                self._list[key].remove(address)
+                if address in self._list[key]:
+                    self._list[key].remove(address)
+                    self._save_list()
+                    logging.info('new subscriber list for %r: %r',
+                                 tags, self._list[key])
         else:
             key = self._get_key(tags)
             if address in self._list[key]:
                 self._list[key].remove(address)
                 self._save_list()
-
-        logging.info('new subscriber list for %r: %r', tags, self._list[key])
+                logging.info('new subscriber list for %r: %r',
+                             tags, self._list[key])
 
         message = Message()
-        message.text = self.config.unsubscribe_text % {
-            'list_name': self.config.list_name}
-        message.text = self.config.unsubscribe_html % {
-            'list_name': self.config.list_name}
+        message.text = self.config.unsubscribe_text
+        message.html = self.config.unsubscribe_html
         message.receivers = [address]
 
         self.sender.send_mail(message)
@@ -580,8 +595,24 @@ class Receiver:
 
         message = Message()
         message.subject = subject
-        message.text = msg.text + self.config.footer_text
-        message.html = msg.html + self.config.footer_html
+
+        footer_text = self.config.footer_text.format(
+            list_name=self.config.list_name,
+            unsubscribe_tag=result.unsubscribe_tag,
+            address=self.config.sender_address)
+        message.text = msg.text + '\n\n' + footer_text
+
+        if len(msg.html.strip()) > 0:
+            footer_html = self.config.footer_html.format(
+                list_name=self.config.list_name,
+                unsubscribe_tag=result.unsubscribe_tag,
+                address=self.config.sender_address)
+            if '</body>' in msg.html:
+                i = msg.html.index('</body>')
+                message.html = msg.html[:i] + footer_html + msg.html[i:]
+            else:
+                message.html = msg.html + footer_html
+
         message.receivers += result.receivers
         message.sender_name = msg.from_values.name
 
