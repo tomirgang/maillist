@@ -294,11 +294,11 @@ class Config:
         """
         load_dotenv()
         self.mailbox_password = os.environ.get('mailbox_password')
-        if len(self.mailbox_password) == 0:
+        if self.mailbox_password is None or len(self.mailbox_password) == 0:
             logging.info('mailbox password is empty')
 
         self.smtp_password = os.environ.get('smtp_password')
-        if len(self.smtp_password) == 0:
+        if self.smtp_password is None or len(self.smtp_password) == 0:
             logging.info('smtp password is empty')
 
     def check_config(self):
