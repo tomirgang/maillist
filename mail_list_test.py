@@ -4,8 +4,9 @@ Tests for mail-list.
 
 import logging
 import os
+import base64
 import pytest
-from mail_list import Config, Maillist, main
+from mail_list import Config, Maillist, main, Sender, Message, Attachment
 
 
 class ArgsDummy:
@@ -294,6 +295,92 @@ class TestConfig:
 
 class TestSender:
     """ Test for mail_list.Sender. """
+
+    def _get_config(self, mocker):
+        mocker.patch("mail_list.Config._interface_configparser",
+                     return_value=TestConfig.config)
+        mocker.patch("mail_list.Config._interface_argparse",
+                     return_value=ArgsDummy())
+
+        return Config()
+
+    def test_send_mail_html(self, mocker):
+        mocker.patch("mail_list.Sender._interface_smtplib")
+        config = self._get_config(mocker)
+
+        sender = Sender(config)
+
+        message = Message()
+        message.html = "HTML"
+        message.text = "TEXT"
+        message.receivers = ['test@exmple.com']
+        message.sender_name = 'SENDER'
+        message.subject = 'SUBJECT'
+
+        sender.send_mail(message)
+
+        sender._interface_smtplib.assert_called_once()
+
+        args = Sender._interface_smtplib.call_args.args
+        assert args[0] == config.sender_address
+        assert args[1] == message.receivers
+        assert message.sender_name in args[2]
+        assert message.subject in args[2]
+        assert message.html in args[2]
+        assert message.text in args[2]
+
+    def test_send_mail_sender_config(self, mocker):
+        mocker.patch("mail_list.Sender._interface_smtplib")
+        config = self._get_config(mocker)
+        sender = Sender(config)
+
+        message = Message()
+
+        sender.send_mail(message)
+
+        sender._interface_smtplib.assert_called_once()
+
+        args = Sender._interface_smtplib.call_args.args
+        assert config.sender_name in args[2]
+
+    def test_send_mail_sender_address_fallback(self, mocker):
+        mocker.patch("mail_list.Sender._interface_smtplib")
+        config = self._get_config(mocker)
+        sender = Sender(config)
+
+        message = Message()
+
+        config.sender_name = None
+
+        sender.send_mail(message)
+
+        sender._interface_smtplib.assert_called_once()
+
+        args = Sender._interface_smtplib.call_args.args
+        assert f'{config.sender_address} <{config.sender_address}>' in args[2]
+
+    def test_send_mail_attachment(self, mocker):
+        mocker.patch("mail_list.Sender._interface_smtplib")
+        config = self._get_config(mocker)
+        sender = Sender(config)
+
+        attachment = Attachment()
+        attachment.filename = 'hello.txt'
+        attachment.mimetype = 'application/octet-stream'
+        attachment.data = 'Hello, World!'.encode(encoding='utf-8')
+        message = Message()
+        message.attachments = [attachment]
+
+        config.sender_name = None
+
+        sender.send_mail(message)
+
+        sender._interface_smtplib.assert_called_once()
+
+        args = Sender._interface_smtplib.call_args.args
+        assert attachment.filename in args[2]
+        assert base64.b64encode(attachment.data).decode(
+            encoding='utf-8') in args[2]
 
 
 class TestSubscribers:

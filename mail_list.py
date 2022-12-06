@@ -365,14 +365,14 @@ class Sender:
 
         logging.debug('Sending message to %r', message.receivers)
 
-        self._interface_smtplib(message.receivers, msg.as_string())
+        sender = self.config.sender_address
 
-    def _interface_smtplib(self, receivers, message):
+        self._interface_smtplib(sender, message.receivers, msg.as_string())
+
+    def _interface_smtplib(self, sender, receivers, message):
         """
         Encapsulate calls to smtplib.
         """
-        sender = self.config.sender_address
-
         smtp = smtplib.SMTP(self.config.smtp_server,
                             port=self.config.smtp_port)
         if self.config.smtp_tls:
