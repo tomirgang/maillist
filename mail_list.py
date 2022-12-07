@@ -418,23 +418,47 @@ class Subscribers:
 
         If the list is empty, the default key is 'subscribers'.
         """
-        if tags is None:
+        if tags is None or len(tags) == 0:
             return 'subscribers'
 
         lower_tags = [tag.lower() for tag in tags]
         lower_tags.sort()
-        return '__'.join(lower_tags)
+        return '#'.join(lower_tags)
 
     def _get_subscribers(self, tags: list[str] = None) -> list[str]:
-        tag_subscribers = self._list.get(self._get_key(tags), [])
+        if tags is None or len(tags) == 0:
+            return self._list.get('subscribers', [])
+
+        tags_subscribers = self._list.get(self._get_key(tags), [])
         full_subscribers = self._list.get('subscribers', [])
-        subscribers = tag_subscribers + full_subscribers
+        subscribers = tags_subscribers + full_subscribers
+
+        tags_set = set(tags)
+        for key in self._list.keys():
+            key_tags_set = set(key.split('#'))
+            if tags_set.issubset(key_tags_set):
+                subscribers += self._list[key]
+
         # remove duplicates
         return list(set(subscribers))
 
     def _is_allowed(self, sender: str, tags: list[str] = None) -> bool:
-        subscribers = self._get_subscribers(tags)
-        return sender in subscribers
+        if sender in self._list['subscribers']:
+            return True
+
+        tag_scope = None
+        for key in self._list.keys():
+            if sender in self._list[key]:
+                key_scope = set(key.split('#'))
+                if tag_scope is None:
+                    tag_scope = key_scope
+                elif key_scope.issubset(tag_scope):
+                    tag_scope = key_scope
+
+        if tag_scope is None:
+            return False
+        else:
+            return set(tags).issuperset(tag_scope)
 
     def _get_tags(self, subject: str) -> list[str]:
         tags = []
@@ -442,7 +466,10 @@ class Subscribers:
             part = part.strip()
             if part.startswith('#') and len(part) > 1:
                 tag = part[1:]
-                tags.append(tag)
+                if '#' in tag:
+                    tags += tag.split('#')
+                else:
+                    tags.append(tag)
 
         if len(tags) == 0:
             return None

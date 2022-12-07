@@ -6,7 +6,7 @@ import logging
 import os
 import base64
 import pytest
-from mail_list import Config, Maillist, main, Sender, Message, Attachment
+from mail_list import Config, Maillist, main, Sender, Message, Attachment, Subscribers
 
 
 class ArgsDummy:
@@ -235,6 +235,7 @@ class TestConfig:
         assert config.unsubscribe_html == ''
 
     def _patch_defaults(self, mocker):
+        """ Get default config object. """
         mocker.patch("mail_list.Config._interface_configparser",
                      return_value=self.config)
         mocker.patch("mail_list.Config._interface_argparse",
@@ -297,6 +298,7 @@ class TestSender:
     """ Test for mail_list.Sender. """
 
     def _get_config(self, mocker):
+        """ Get default config object. """
         mocker.patch("mail_list.Config._interface_configparser",
                      return_value=TestConfig.config)
         mocker.patch("mail_list.Config._interface_argparse",
@@ -305,6 +307,7 @@ class TestSender:
         return Config()
 
     def test_send_mail_html(self, mocker):
+        """ Test for mail content. """
         mocker.patch("mail_list.Sender._interface_smtplib")
         config = self._get_config(mocker)
 
@@ -330,6 +333,7 @@ class TestSender:
         assert message.text in args[2]
 
     def test_send_mail_sender_config(self, mocker):
+        """ Test for fallback to config sender name. """
         mocker.patch("mail_list.Sender._interface_smtplib")
         config = self._get_config(mocker)
         sender = Sender(config)
@@ -344,6 +348,7 @@ class TestSender:
         assert config.sender_name in args[2]
 
     def test_send_mail_sender_address_fallback(self, mocker):
+        """ Test for fallback to sender address as sender name. """
         mocker.patch("mail_list.Sender._interface_smtplib")
         config = self._get_config(mocker)
         sender = Sender(config)
@@ -360,6 +365,7 @@ class TestSender:
         assert f'{config.sender_address} <{config.sender_address}>' in args[2]
 
     def test_send_mail_attachment(self, mocker):
+        """ Test for sending mails with attachments. """
         mocker.patch("mail_list.Sender._interface_smtplib")
         config = self._get_config(mocker)
         sender = Sender(config)
@@ -385,6 +391,112 @@ class TestSender:
 
 class TestSubscribers:
     """ Test for mail_list.Subscribers. """
+
+    def _get_config(self, mocker):
+        """ Get default config. """
+        mocker.patch("mail_list.Config._interface_configparser",
+                     return_value=TestConfig.config)
+        mocker.patch("mail_list.Config._interface_argparse",
+                     return_value=ArgsDummy())
+
+        return Config()
+
+    def _get_sender(self, mocker, config):
+        """ Get default sender. """
+        mocker.patch("mail_list.Sender._interface_smtplib")
+
+        return Sender(config=config)
+
+    def _get_subscribers(self, mocker):
+        """ Get default subscriber. """
+        mocker.patch("mail_list.Subscribers._save_list")
+        self.config = self._get_config(mocker)
+        self.sender = self._get_sender(mocker, self.config)
+        self.config.maillist_file = 'NO_FILE'
+        return Subscribers(self.config, self.sender)
+
+    def test_get_list(self, mocker):
+        """ Test for fallback data structure. """
+        subscribers = self._get_subscribers(mocker)
+
+        assert subscribers._list == {'subscribers': []}
+
+    def test_get_key(self, mocker):
+        """ Test for key generation form tags. """
+        subscribers = self._get_subscribers(mocker)
+
+        tags = ['test', 'one', 'two']
+        assert subscribers._get_key(tags) == 'one#test#two'
+
+        assert subscribers._get_key() == 'subscribers'
+
+    def test_get_subscribers(self, mocker):
+        """ Test for receiver list calculation.  """
+        subscribers = self._get_subscribers(mocker)
+        subscribers._list['subscribers'] = ['full@subscriber.de']
+        subscribers._list['test'] = ['test@subscriber.de']
+        subscribers._list['a#test'] = ['a_test@subscriber.de']
+        subscribers._list['b#test'] = ['b_test@subscriber.de']
+        subscribers._list['a#b#test'] = ['a_b_test@subscriber.de']
+
+        receivers = subscribers._get_subscribers()
+        assert receivers == ['full@subscriber.de'], 'no tags'
+
+        tags = ['test']
+        receivers = subscribers._get_subscribers(tags)
+        assert set(receivers) == set(['full@subscriber.de',
+                                      'test@subscriber.de',
+                                      'a_test@subscriber.de',
+                                      'b_test@subscriber.de',
+                                      'a_b_test@subscriber.de']), 'test'
+
+        tags = ['a', 'b']
+        receivers = subscribers._get_subscribers(tags)
+        assert set(receivers) == set(['full@subscriber.de',
+                                      'a_b_test@subscriber.de']), 'a, b'
+
+        tags = ['b', 'test']
+        receivers = subscribers._get_subscribers(tags)
+        assert set(receivers) == set(['full@subscriber.de',
+                                      'b_test@subscriber.de',
+                                      'a_b_test@subscriber.de']), 'b, test'
+
+    def test_is_allowed(self, mocker):
+        """ Test for allowed senders.  """
+        subscribers = self._get_subscribers(mocker)
+        subscribers._list['subscribers'] = ['full@subscriber.de']
+        subscribers._list['test'] = ['test@subscriber.de']
+        subscribers._list['a#test'] = ['a_test@subscriber.de']
+        subscribers._list['b#test'] = ['b_test@subscriber.de']
+        subscribers._list['a#b#test'] = ['a_b_test@subscriber.de']
+
+        tags = ['test']
+        allowed = subscribers._is_allowed('b_test@subscriber.de', tags)
+        assert allowed is False, 'broader audience'
+
+        tags = ['test', 'b']
+        allowed = subscribers._is_allowed('b_test@subscriber.de', tags)
+        assert allowed is True, 'fitting audience'
+
+        tags = ['test', 'b', 'a']
+        allowed = subscribers._is_allowed('b_test@subscriber.de', tags)
+        assert allowed is True, 'smaller audience'
+
+        tags = ['test', 'b', 'a']
+        allowed = subscribers._is_allowed('no@subscriber.de', tags)
+        assert allowed is False, 'no subscriber'
+
+    def test_get_tags(self, mocker):
+        """ Test for tag extraction. """
+        subscribers = self._get_subscribers(mocker)
+
+        subject = "Re: Fwd: Hallo #test #a#b # asdf #d welt"
+        tags = subscribers._get_tags(subject)
+        assert set(tags) == set(['test', 'a', 'b', 'd'])
+
+        subject = "Re: Fwd: Hallo # asdf welt"
+        tags = subscribers._get_tags(subject)
+        assert tags is None
 
 
 class TestReceiver:
