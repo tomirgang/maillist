@@ -1,0 +1,8 @@
+[mailbox]
+server = imap.example.com
+
+[smtp]
+server = smtp.example.com
+
+[sender]
+address = info@example.com

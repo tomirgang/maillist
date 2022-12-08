@@ -84,12 +84,12 @@ class Config:
         Encapsulate calls to argparse dependency.
         """
         parser = argparse.ArgumentParser(description='Simple Maillist.')
-        parser.add_argument('-c', '--config', default='./config', type=str,
+        parser.add_argument('-c', '--config', default='./data/config', type=str,
                             help='configuration file')
-        parser.add_argument('-m', '--maillist', default='./maillist.json', type=str,
-                            help='maillist json file')
-        parser.add_argument('-l', '--logfile', default='./maillist.log', type=str,
-                            help='maillist logfile')
+        parser.add_argument('-m', '--mail_list', default='./data/mail_list.json', type=str,
+                            help='mail_list json file')
+        parser.add_argument('-l', '--logfile', default='./data/mail_list.log', type=str,
+                            help='mail_list logfile')
         parser.add_argument('-s', '--sleep', default='60', type=int,
                             help='sleep time between mail checks in seconds')
         parser.add_argument('-v', '--verbose', action="store_true",

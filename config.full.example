@@ -1,0 +1,27 @@
+[mailbox]
+server = imap.example.com
+user = info@example.com
+
+[smtp]
+server = smtp.example.com
+user = info@example.com
+port = 587
+tls = true
+
+[sender]
+address = info@example.com
+name = Max Mustermann
+
+[test]
+receiver = max.mustermann@example.com
+
+[snippets]
+list_name = info@example.com
+footer_text = ./data/snippets/footer.txt
+footer_html = ./data/snippets/footer.html
+subscribe_text = ./data/snippets/subscribe.txt
+subscribe_html = ./data/snippets/subscribe.html
+subscribe_subject = Welcome!
+unsubscribe_text = ./data/snippets/unsubscribe.txt
+unsubscribe_html = ./data/snippets/unsubscribe.html
+unsubscribe_subject = Bye!
