@@ -1,9 +1,0 @@
-Hi!
-
-Goodbye from the mail-list {list_name}.
-
----
-
-Hi!
-
-Auf Wiedersehen  von der mail-list {list_name}.

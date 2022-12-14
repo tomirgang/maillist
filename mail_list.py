@@ -493,7 +493,7 @@ class Subscribers:
             result = SubscriberCheckResult()
             result.receivers = receivers
             result.forward = True
-            result.unsubscribe_tag = '$>unsubscribe #' + ' #'.join(tags)
+            result.unsubscribe_tag = '#' + ' #'.join(tags)
             return result
         else:
             logging.warning(
@@ -625,14 +625,14 @@ class Receiver:
 
         footer_text = self.config.footer_text.format(
             list_name=self.config.list_name,
-            unsubscribe_tag=result.unsubscribe_tag,
+            tags=result.unsubscribe_tag,
             address=self.config.sender_address)
         message.text = msg.text + '\n\n' + footer_text
 
         if len(msg.html.strip()) > 0:
             footer_html = self.config.footer_html.format(
                 list_name=self.config.list_name,
-                unsubscribe_tag=result.unsubscribe_tag,
+                tags=result.unsubscribe_tag,
                 address=self.config.sender_address)
             if '</body>' in msg.html:
                 i = msg.html.index('</body>')

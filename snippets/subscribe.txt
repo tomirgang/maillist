@@ -1,9 +1,0 @@
-Hi!
-
-Welcome on the mail-list {list_name}.
-
----
-
-Hi!
-
-Wilkommen auf der mail-list {list_name}.

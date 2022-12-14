@@ -265,3 +265,6 @@ $RECYCLE.BIN/
 
 *.json
 .env
+config
+data
+data/**
