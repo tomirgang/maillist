@@ -6,7 +6,7 @@ import logging
 import os
 import base64
 import pytest
-from mail_list import Config, Maillist, main, Sender, Message, Attachment, Subscribers
+from maillist import Config, Maillist, main, Sender, Message, Attachment, Subscribers
 
 
 class ArgsDummy:
@@ -22,7 +22,7 @@ class ArgsDummy:
 
 
 class TestConfig:
-    """ Test for mail_list.Config. """
+    """ Test for maillist.Config. """
     config: dict = {'mailbox': {'server': 'imappro.zoho.eu', 'user': 'info@360tasks.de'},
                     'smtp': {'server': 'smtppro.zoho.eu', 'user': 'info@360tasks.de', 'port': '587',
                              'tls': 'true'},
@@ -39,7 +39,7 @@ class TestConfig:
                                  'unsubscribe_subject': 'Bye!'}}
 
     def _patch_args(self, mocker, args):
-        mocker.patch("mail_list.Config._interface_argparse",
+        mocker.patch("maillist.Config._interface_argparse",
                      return_value=args)
 
     def test_get_args_loglevel(self, mocker):
@@ -95,7 +95,7 @@ class TestConfig:
         config = Config()
         assert config.config_file is './data/config'
 
-    def test_get_args_mail_list_file(self, mocker):
+    def test_get_args_maillist_file(self, mocker):
         """ Test mail-list file argument. """
         args = ArgsDummy()
         self._patch_args(mocker, args)
@@ -111,9 +111,9 @@ class TestConfig:
         assert config.send_test_mail is True
 
     def _patch_config(self, mocker, config):
-        mocker.patch("mail_list.Config._interface_configparser",
+        mocker.patch("maillist.Config._interface_configparser",
                      return_value=config)
-        mocker.patch("mail_list.Config._interface_argparse",
+        mocker.patch("maillist.Config._interface_argparse",
                      return_value=ArgsDummy())
 
     def test_get_config_mailbox(self, mocker):
@@ -236,9 +236,9 @@ class TestConfig:
 
     def _patch_defaults(self, mocker):
         """ Get default config object. """
-        mocker.patch("mail_list.Config._interface_configparser",
+        mocker.patch("maillist.Config._interface_configparser",
                      return_value=self.config)
-        mocker.patch("mail_list.Config._interface_argparse",
+        mocker.patch("maillist.Config._interface_argparse",
                      return_value=ArgsDummy())
 
     def test_get_secrets(self, mocker):
@@ -295,20 +295,20 @@ class TestConfig:
 
 
 class TestSender:
-    """ Test for mail_list.Sender. """
+    """ Test for maillist.Sender. """
 
     def _get_config(self, mocker):
         """ Get default config object. """
-        mocker.patch("mail_list.Config._interface_configparser",
+        mocker.patch("maillist.Config._interface_configparser",
                      return_value=TestConfig.config)
-        mocker.patch("mail_list.Config._interface_argparse",
+        mocker.patch("maillist.Config._interface_argparse",
                      return_value=ArgsDummy())
 
         return Config()
 
     def test_send_mail_html(self, mocker):
         """ Test for mail content. """
-        mocker.patch("mail_list.Sender._interface_smtplib")
+        mocker.patch("maillist.Sender._interface_smtplib")
         config = self._get_config(mocker)
 
         sender = Sender(config)
@@ -334,7 +334,7 @@ class TestSender:
 
     def test_send_mail_sender_config(self, mocker):
         """ Test for fallback to config sender name. """
-        mocker.patch("mail_list.Sender._interface_smtplib")
+        mocker.patch("maillist.Sender._interface_smtplib")
         config = self._get_config(mocker)
         sender = Sender(config)
 
@@ -349,7 +349,7 @@ class TestSender:
 
     def test_send_mail_sender_address_fallback(self, mocker):
         """ Test for fallback to sender address as sender name. """
-        mocker.patch("mail_list.Sender._interface_smtplib")
+        mocker.patch("maillist.Sender._interface_smtplib")
         config = self._get_config(mocker)
         sender = Sender(config)
 
@@ -366,7 +366,7 @@ class TestSender:
 
     def test_send_mail_attachment(self, mocker):
         """ Test for sending mails with attachments. """
-        mocker.patch("mail_list.Sender._interface_smtplib")
+        mocker.patch("maillist.Sender._interface_smtplib")
         config = self._get_config(mocker)
         sender = Sender(config)
 
@@ -390,26 +390,26 @@ class TestSender:
 
 
 class TestSubscribers:
-    """ Test for mail_list.Subscribers. """
+    """ Test for maillist.Subscribers. """
 
     def _get_config(self, mocker):
         """ Get default config. """
-        mocker.patch("mail_list.Config._interface_configparser",
+        mocker.patch("maillist.Config._interface_configparser",
                      return_value=TestConfig.config)
-        mocker.patch("mail_list.Config._interface_argparse",
+        mocker.patch("maillist.Config._interface_argparse",
                      return_value=ArgsDummy())
 
         return Config()
 
     def _get_sender(self, mocker, config):
         """ Get default sender. """
-        mocker.patch("mail_list.Sender._interface_smtplib")
+        mocker.patch("maillist.Sender._interface_smtplib")
 
         return Sender(config=config)
 
     def _get_subscribers(self, mocker):
         """ Get default subscriber. """
-        mocker.patch("mail_list.Subscribers._save_list")
+        mocker.patch("maillist.Subscribers._save_list")
         self.config = self._get_config(mocker)
         self.sender = self._get_sender(mocker, self.config)
         self.config.maillist_file = 'NO_FILE'
@@ -500,21 +500,21 @@ class TestSubscribers:
 
 
 class TestReceiver:
-    """ Test for mail_list.Receiver. """
+    """ Test for maillist.Receiver. """
 
 
 class TestMaillist:
-    """ Test for mail_list.Maillist. """
+    """ Test for maillist.Maillist. """
 
 
 def test_main(mocker):
-    """ Test for mail_list.main. """
-    mocker.patch("mail_list.Config._interface_configparser",
+    """ Test for maillist.main. """
+    mocker.patch("maillist.Config._interface_configparser",
                  return_value=TestConfig.config)
-    mocker.patch("mail_list.Config._interface_argparse",
+    mocker.patch("maillist.Config._interface_argparse",
                  return_value=ArgsDummy())
-    mocker.patch('mail_list.Config.check_config')
-    mocker.patch('mail_list.Maillist.process_mails')
+    mocker.patch('maillist.Config.check_config')
+    mocker.patch('maillist.Maillist.process_mails')
 
     main()
 
