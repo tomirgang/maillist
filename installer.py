@@ -1,6 +1,6 @@
-""" Installer for mail_list.
+""" Installer for maillist.
 
-This scripts prepares interactive the environment for mail_list.py
+This scripts prepares interactive the environment for maillist.py
 """
 
 import os
@@ -10,7 +10,7 @@ from prompt_toolkit import prompt
 
 
 class Installer:
-    """ Setup environment for mail_list. """
+    """ Setup environment for maillist. """
 
     footer_html = """
 <hr>
@@ -204,7 +204,7 @@ Auf Wiedersehen,
                 f.flush()
 
     def setup(self):
-        """ Generate mail_list config data. """
+        """ Generate maillist config data. """
         self.data_dir()
         self.mailbox()
         self.snippets()
