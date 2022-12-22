@@ -212,6 +212,7 @@ Auf Wiedersehen,
 
 if __name__ == '__main__':
     if os.path.exists('./data/config'):
+        print('Config file already exists in ./data/config.')
         sys.exit(0)
 
     Installer().setup()

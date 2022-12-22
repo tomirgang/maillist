@@ -11,11 +11,11 @@ from mail_list import Config, Maillist, main, Sender, Message, Attachment, Subsc
 
 class ArgsDummy:
     """ Replacement for argparser return value. """
-    logfile: str = './maillist.log'
+    logfile: str = './data/maillist.log'
     daemon: bool = False
     sleep: int = 60
-    config: str = './config'
-    maillist: str = './maillist.json'
+    config: str = './data/config'
+    maillist: str = './data/maillist.json'
     test: bool = False
     verbose: bool = False
     reduce_logs: bool = False
@@ -29,13 +29,13 @@ class TestConfig:
                     'sender': {'address': 'info@360tasks.de', 'name': 'Tom'},
                     'test': {'receiver': 'thomas@irgang.eu'},
                     'snippets': {'list_name': 'info@360tasks.de',
-                                 'footer_text': './snippets/footer.txt',
-                                 'footer_html': './snippets/footer.html',
-                                 'subscribe_text': './snippets/subscribe.txt',
-                                 'subscribe_html': './snippets/subscribe.html',
+                                 'footer_text': './data/snippets/footer.txt',
+                                 'footer_html': './data/snippets/footer.html',
+                                 'subscribe_text': './data/snippets/subscribe.txt',
+                                 'subscribe_html': './data/snippets/subscribe.html',
                                  'subscribe_subject': 'Welcome!',
-                                 'unsubscribe_text': './snippets/unsubscribe.txt',
-                                 'unsubscribe_html': './snippets/unsubscribe.html',
+                                 'unsubscribe_text': './data/snippets/unsubscribe.txt',
+                                 'unsubscribe_html': './data/snippets/unsubscribe.html',
                                  'unsubscribe_subject': 'Bye!'}}
 
     def _patch_args(self, mocker, args):
@@ -93,14 +93,14 @@ class TestConfig:
         args = ArgsDummy()
         self._patch_args(mocker, args)
         config = Config()
-        assert config.config_file is './config'
+        assert config.config_file is './data/config'
 
     def test_get_args_mail_list_file(self, mocker):
         """ Test mail-list file argument. """
         args = ArgsDummy()
         self._patch_args(mocker, args)
         config = Config()
-        assert config.maillist_file is './maillist.json'
+        assert config.maillist_file is './data/maillist.json'
 
     def test_get_args_test(self, mocker):
         """ Test sleep time. """
@@ -190,30 +190,30 @@ class TestConfig:
         assert config.subscribe_subject == 'Welcome!'
         assert config.unsubscribe_subject == 'Bye!'
 
-        with open('./snippets/footer.txt', 'r', encoding='utf-8') as file:
+        with open('./data/snippets/footer.txt', 'r', encoding='utf-8') as file:
             text = file.read()
             assert config.footer_text == text, "footer text"
 
-        with open('./snippets/footer.html', 'r', encoding='utf-8') as file:
+        with open('./data/snippets/footer.html', 'r', encoding='utf-8') as file:
             text = file.read()
             assert config.footer_html == text, "footer html"
 
-        with open('./snippets/subscribe.txt', 'r', encoding='utf-8') as file:
+        with open('./data/snippets/subscribe.txt', 'r', encoding='utf-8') as file:
             text = file.read()
             text = text.format(list_name=config.list_name)
             assert config.subscribe_text == text, "subscribe text"
 
-        with open('./snippets/subscribe.html', 'r', encoding='utf-8') as file:
+        with open('./data/snippets/subscribe.html', 'r', encoding='utf-8') as file:
             text = file.read()
             text = text.format(list_name=config.list_name)
             assert config.subscribe_html == text, "subscribe html"
 
-        with open('./snippets/unsubscribe.txt', 'r', encoding='utf-8') as file:
+        with open('./data/snippets/unsubscribe.txt', 'r', encoding='utf-8') as file:
             text = file.read()
             text = text.format(list_name=config.list_name)
             assert config.unsubscribe_text == text, "unsubscribe text"
 
-        with open('./snippets/unsubscribe.html', 'r', encoding='utf-8') as file:
+        with open('./data/snippets/unsubscribe.html', 'r', encoding='utf-8') as file:
             text = file.read()
             text = text.format(list_name=config.list_name)
             assert config.unsubscribe_html == text, "subscribe html"
