@@ -292,7 +292,7 @@ class Config:
         """
         Read secrets from .env
         """
-        load_dotenv()
+        load_dotenv('./data/.env')
         self.mailbox_password = os.environ.get('mailbox_password')
         if self.mailbox_password is None or len(self.mailbox_password) == 0:
             logging.info('mailbox password is empty')
