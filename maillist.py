@@ -401,9 +401,12 @@ class Subscribers:
         if exists(self.config.maillist_file):
             with open(self.config.maillist_file, 'r', encoding='utf-8') as file:
                 self._list = json.load(file)
+            logging.info('Loading existing list.')
         else:
             self._list = {'subscribers': []}
             self._save_list()
+
+        logging.debug('Subscribers: %r', self._list)
 
     def _save_list(self):
         """
